@@ -377,10 +377,6 @@ No performance claims are made until measured.
 
 ## Author
 
-**Jay** — B.Tech CSE, VIT-AP University
+**Jay Jaiswal** 
 
 ---
-
-## License
-
-Add a license of your choice (for example MIT) as a `LICENSE` file in the repository root.
