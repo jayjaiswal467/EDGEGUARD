@@ -1,7 +1,5 @@
-# ============================================================
 # EDGEGUARD - Traffic Intelligence
 # Phase 1
-# ============================================================
 
 MIN_GREEN = 10
 MAX_GREEN = 60
@@ -134,9 +132,7 @@ def get_traffic_decision(
         Fairness counter
     """
 
-    # --------------------------------------------------------
-    # Validate inputs
-    # --------------------------------------------------------
+
 
     counts = {
         "north": north,
@@ -157,9 +153,7 @@ def get_traffic_decision(
                 f"{direction} traffic count cannot be negative"
             )
 
-    # --------------------------------------------------------
     # Calculate directional totals
-    # --------------------------------------------------------
 
     ns_total, ew_total = calculate_traffic(
         north,
@@ -168,18 +162,16 @@ def get_traffic_decision(
         west
     )
 
-    # --------------------------------------------------------
+    
     # Determine normal priority
-    # --------------------------------------------------------
+    
 
     normal_priority = determine_priority(
         ns_total,
         ew_total
     )
 
-    # --------------------------------------------------------
     # Apply fairness / anti-starvation
-    # --------------------------------------------------------
 
     priority = apply_fairness(
         normal_priority,
@@ -188,9 +180,8 @@ def get_traffic_decision(
         consecutive_priority
     )
 
-    # --------------------------------------------------------
+    
     # Update consecutive priority counter
-    # --------------------------------------------------------
 
     new_consecutive_priority = update_priority_counter(
         priority,
@@ -198,16 +189,13 @@ def get_traffic_decision(
         consecutive_priority
     )
 
-    # --------------------------------------------------------
     # Adaptive green times
-    # --------------------------------------------------------
 
     ns_green = calculate_green_time(ns_total)
     ew_green = calculate_green_time(ew_total)
 
-    # --------------------------------------------------------
+    
     # Return complete decision
-    # --------------------------------------------------------
 
     return {
         "north": north,
@@ -228,9 +216,7 @@ def get_traffic_decision(
     }
 
 
-# ============================================================
 # TEST
-# ============================================================
 
 if __name__ == "__main__":
 

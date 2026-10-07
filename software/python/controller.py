@@ -1,145 +1,116 @@
-import time
-
-from traffic_logic import get_traffic_decision
-
-
-# Traffic light states
-NS_GREEN = "NS_GREEN"
-NS_YELLOW = "NS_YELLOW"
-ALL_RED = "ALL_RED"
-EW_GREEN = "EW_GREEN"
-EW_YELLOW = "EW_YELLOW"
+class TrafficState:
+    NS_GREEN = "NS_GREEN"
+    NS_YELLOW = "NS_YELLOW"
+    ALL_RED = "ALL_RED"
+    EW_GREEN = "EW_GREEN"
+    EW_YELLOW = "EW_YELLOW"
 
 
-def show_state(state):
-    print("\nCurrent State:", state)
+class TrafficController:
 
-    if state == NS_GREEN:
-        print("North: GREEN")
-        print("South: GREEN")
-        print("East: RED")
-        print("West: RED")
+    def __init__(self):
+        self.current_state = TrafficState.ALL_RED
+        self.last_green_direction = None
 
-    elif state == NS_YELLOW:
-        print("North: YELLOW")
-        print("South: YELLOW")
-        print("East: RED")
-        print("West: RED")
+    def get_state(self):
+        return self.current_state
 
-    elif state == ALL_RED:
-        print("North: RED")
-        print("South: RED")
-        print("East: RED")
-        print("West: RED")
+    def transition(self, next_state):
+        allowed_transitions = {
+            TrafficState.NS_GREEN: [
+                TrafficState.NS_YELLOW
+            ],
 
-    elif state == EW_GREEN:
-        print("North: RED")
-        print("South: RED")
-        print("East: GREEN")
-        print("West: GREEN")
+            TrafficState.NS_YELLOW: [
+                TrafficState.ALL_RED
+            ],
 
-    elif state == EW_YELLOW:
-        print("North: RED")
-        print("South: RED")
-        print("East: YELLOW")
-        print("West: YELLOW")
+            TrafficState.ALL_RED: [
+                TrafficState.NS_GREEN,
+                TrafficState.EW_GREEN
+            ],
 
+            TrafficState.EW_GREEN: [
+                TrafficState.EW_YELLOW
+            ],
 
-def run_cycle(decision):
+            TrafficState.EW_YELLOW: [
+                TrafficState.ALL_RED
+            ]
+        }
 
-    if decision["priority"] == "NS":
-        first_phase = NS_GREEN
-        first_time = decision["ns_green"]
+        allowed = allowed_transitions.get(
+            self.current_state, []
+        )
 
-        second_phase = EW_GREEN
-        second_time = decision["ew_green"]
+        if next_state not in allowed:
+            raise ValueError(
+                f"Invalid transition: "
+                f"{self.current_state} -> {next_state}"
+            )
 
-    elif decision["priority"] == "EW":
-        first_phase = EW_GREEN
-        first_time = decision["ew_green"]
+        self.current_state = next_state
 
-        second_phase = NS_GREEN
-        second_time = decision["ns_green"]
+        if next_state == TrafficState.NS_GREEN:
+            self.last_green_direction = "NS"
 
-    else:
-        first_phase = NS_GREEN
-        first_time = decision["ns_green"]
+        elif next_state == TrafficState.EW_GREEN:
+            self.last_green_direction = "EW"
 
-        second_phase = EW_GREEN
-        second_time = decision["ew_green"]
+        return self.current_state
 
-    # First direction
-    show_state(first_phase)
-    print("Duration:", first_time, "seconds")
-    time.sleep(2)  # Demo delay
+    def next_state(self, priority):
+        if self.current_state == TrafficState.NS_GREEN:
+            return TrafficState.NS_YELLOW
 
-    # Yellow transition
-    if first_phase == NS_GREEN:
-        show_state(NS_YELLOW)
-    else:
-        show_state(EW_YELLOW)
+        if self.current_state == TrafficState.NS_YELLOW:
+            return TrafficState.ALL_RED
 
-    print("Duration: 3 seconds")
-    time.sleep(2)
+        if self.current_state == TrafficState.EW_GREEN:
+            return TrafficState.EW_YELLOW
 
-    # Safety transition
-    show_state(ALL_RED)
-    print("Duration: 2 seconds")
-    time.sleep(2)
+        if self.current_state == TrafficState.EW_YELLOW:
+            return TrafficState.ALL_RED
 
-    # Second direction
-    show_state(second_phase)
-    print("Duration:", second_time, "seconds")
-    time.sleep(2)
+        if self.current_state == TrafficState.ALL_RED:
 
-    # Yellow transition
-    if second_phase == NS_GREEN:
-        show_state(NS_YELLOW)
-    else:
-        show_state(EW_YELLOW)
+            if priority == "NS":
+                return TrafficState.NS_GREEN
 
-    print("Duration: 3 seconds")
-    time.sleep(2)
+            if priority == "EW":
+                return TrafficState.EW_GREEN
 
-    # Safety transition
-    show_state(ALL_RED)
-    print("Duration: 2 seconds")
-    time.sleep(2)
+            if priority == "EQUAL":
+                if self.last_green_direction == "NS":
+                    return TrafficState.EW_GREEN
+                else:
+                    return TrafficState.NS_GREEN
+
+        raise ValueError(
+            f"Invalid priority: {priority}"
+        )
+
+    def apply_priority(self, priority):
+        next_state = self.next_state(priority)
+        return self.transition(next_state)
 
 
-# ---------------------------------------
-# TEST TRAFFIC DATA
-# ---------------------------------------
+if __name__ == "__main__":
 
-north = 8
-south = 3
-east = 15
-west = 2
+    controller = TrafficController()
 
+    print("Initial state:", controller.get_state())
 
-# Get traffic decision
-decision = get_traffic_decision(
-    north,
-    south,
-    east,
-    west
-)
+    # Valid transition
+    controller.apply_priority("NS")
+    print("Valid:", controller.get_state())
 
+    # Invalid transition:
+    # NS_GREEN -> EW_GREEN should NOT be allowed
+    try:
+        controller.transition(TrafficState.EW_GREEN)
+        print("ERROR: Invalid transition was allowed!")
 
-print("================================")
-print("      EDGEGUARD CONTROLLER")
-print("================================")
-
-print("\nTraffic:")
-print("North:", north)
-print("South:", south)
-print("East:", east)
-print("West:", west)
-
-print("\nPriority:", decision["priority"])
-print("NS green:", decision["ns_green"], "seconds")
-print("EW green:", decision["ew_green"], "seconds")
-
-
-# Run traffic cycle
-run_cycle(decision)
+    except ValueError as e:
+        print("PASS: Invalid transition rejected")
+        print("Error:", e)
