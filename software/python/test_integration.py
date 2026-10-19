@@ -1,104 +1,41 @@
-from traffic_logic import get_traffic_decision
-from controller import TrafficController, TrafficState
 
+import time
+from serial_comm import SerialCommunicator
 
-class FakeSerial:
-    def write(self, data):
-        print(f"[FAKE ESP32] Received: {data.decode().strip()}")
+PORT = "COM3"
 
+esp32 = SerialCommunicator(PORT)
 
-class FakeSerialCommunicator:
-    def __init__(self):
-        self.serial_connection = FakeSerial()
+try:
+    esp32.connect()
 
-    def send_command(self, command):
-        valid_commands = {
-            "NS_GREEN",
-            "NS_YELLOW",
-            "EW_GREEN",
-            "EW_YELLOW",
-            "ALL_RED"
-        }
+    # Allow the ESP32 to restart after opening serial
+    time.sleep(2)
 
-        if command not in valid_commands:
-            raise ValueError(f"Invalid command: {command}")
+    print("\nTesting EDGEGUARD physical traffic light...\n")
 
-        message = command + "\n"
-        self.serial_connection.write(
-            message.encode("utf-8")
-        )
+    esp32.send_command("ALL_RED")
+    time.sleep(2)
 
-        print(f"[SERIAL] Sent: {command}")
+    esp32.send_command("NS_GREEN")
+    time.sleep(3)
 
+    esp32.send_command("NS_YELLOW")
+    time.sleep(2)
 
-def state_to_command(state):
-    return state
+    esp32.send_command("EW_GREEN")
+    time.sleep(3)
 
+    esp32.send_command("EW_YELLOW")
+    time.sleep(2)
 
-def main():
+    esp32.send_command("ALL_RED")
+    time.sleep(2)
 
-    print("=" * 50)
-    print("EDGEGUARD SOFTWARE INTEGRATION TEST")
-    print("=" * 50)
+    print("\nHardware command test completed.")
 
-    # STEP 1: Vehicle counts
-    
+except Exception as error:
+    print(f"\nHardware test failed: {error}")
 
-    north = 8
-    south = 3
-    east = 15
-    west = 2
-
-    print("\n[INPUT]")
-    print(f"North: {north}")
-    print(f"South: {south}")
-    print(f"East:  {east}")
-    print(f"West:  {west}")
-
-    # STEP 2: Traffic logic
-    
-
-    decision = get_traffic_decision(
-        north,
-        south,
-        east,
-        west
-    )
-
-    print("\n[TRAFFIC LOGIC]")
-    print(f"NS Total: {decision['ns_total']}")
-    print(f"EW Total: {decision['ew_total']}")
-    print(f"Priority: {decision['priority']}")
-    print(f"NS Green: {decision['ns_green']}s")
-    print(f"EW Green: {decision['ew_green']}s")
-
-    # STEP 3: Controller
-
-    controller = TrafficController()
-
-    print("\n[CONTROLLER]")
-
-    state = controller.apply_priority(
-        decision["priority"]
-    )
-
-    print(f"State: {state}")
-
-    
-    # STEP 4: Serial communication
-
-    serial_comm = FakeSerialCommunicator()
-
-    print("\n[SERIAL COMMUNICATION]")
-
-    command = state_to_command(state)
-
-    serial_comm.send_command(command)
-
-    print("\n" + "=" * 50)
-    print("INTEGRATION TEST PASSED")
-    print("=" * 50)
-
-
-if __name__ == "__main__":
-    main()
+finally:
+    esp32.close()

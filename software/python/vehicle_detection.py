@@ -16,7 +16,7 @@ model = YOLO("yolov8n.pt")
 # PERCEPTION WATCHDOG
 watchdog = PerceptionWatchdog(
     max_frame_age=2.0,
-    max_inference_time=1.0
+    max_inference_time=5.0
 )
 
 
@@ -254,7 +254,7 @@ def main():
 
 
                 # CONFIDENCE FILTER
-                if confidence < 0.5:
+                if confidence < 0.1:
                     continue
 
 
